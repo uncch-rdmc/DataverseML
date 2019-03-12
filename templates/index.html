@@ -1,0 +1,87 @@
+{% extends 'template.html' %}
+{% block content %}
+
+
+<div class="jumbotron" style="margin-top:20px">
+  <h1 class="display-4">Welcome to Dataverse ML</h1>
+  <p class="lead">A Machine Learning approach to Dataverse</p>
+  <hr class="my-4">
+  <p>Type in the DOI below and click submit:</p>
+  <p class="lead">
+	<input type="text" id="doi" value="10.33563/S3/CQRCG3"/>
+    <a class="btn btn-primary btn-lg" href="#" id="doi_submit_btn" role="button">Submit</a>
+	<br/>
+	<div class="dropdown" id="select_file_drop" style="display:none">
+		<a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+		Select File to Access
+		</a>
+		
+		<div id="dataverse_files" class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+			
+		</div>
+	</div>
+
+  </p>
+</div>
+<div id="loader"></div>
+<div id="analyzed_data"></div>
+
+<script>
+	$("#doi_submit_btn").click(function(){
+		$("#loader").show();
+		var doi = $("#doi").val();
+		$.getJSON( "/get_files", {doi: doi}, function( data ) {
+			$("#loader").fadeOut();
+			$("#dataverse_files").html("");
+			if(data['status'] != "OK"){
+				swal("Error has occured", data['message'], "error");
+				$("#select_file_drop").hide();
+			} else{
+				$("#dropdownMenuLink").html("Select File to Access");
+				$("#select_file_drop").show();
+				console.log( data['data']['latestVersion']['files']);
+				
+				$.each( data['data']['latestVersion']['files'], function( key, val ) {
+					$("#dataverse_files").append("<a class='dropdown-item' data-id='"+val['dataFile']['id']+"' href='#'>"+val['label']+"</a>");
+				})
+			}
+		});
+	});
+	
+	$(document).on('click','.dropdown-item', function(){
+		$("#loader").show();
+		var id = $(this).data('id');
+		var doi = $("#doi").val();
+		var name = $(this).text().trim();
+		$("#dropdownMenuLink").html(name);
+		$.get( "/analyze_data", {doi: doi, name: name, id: id}, function( data ) {
+			$("#loader").fadeOut();
+			$("#analyzed_data").html(data);
+		});
+		
+	})
+	
+</script>
+
+<style>
+#loader {
+  border: 16px solid #f3f3f3; /* Light grey */
+  border-top: 16px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  animation: spin 2s linear infinite;
+  display:none;
+  margin:0 auto;
+  text-align:center;
+}
+
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+	
+
+{% endblock %}
